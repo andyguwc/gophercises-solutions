@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Book</title>
+</head>
+<body>
+<h1>{{.Title}}</h1>
+    {{range .Paragraphs}}
+    <li>{{.}}</li>
+    {{end}}
+    {{if .Options}}
+    <ul>
+    {{range .Options}}
+      <li><a href="/{{.Chapter}}">{{.Text}}</a></li>
+    {{end}}
+    </ul>
+    {{else}}
+        <h3>The End</h3>
+    {{end}}
+</body>
+</html>
