@@ -13,10 +13,11 @@ go build . && ./5-sitemap --input "https://www.github.com"
 package main 
 
 import (
-	// "encoding/xml"
+	"encoding/xml"
 	"fmt"
 	"flag"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -44,6 +45,9 @@ func main() {
 		fmt.Println(v)
 	}
 
+	generateXML(res)
+	return 
+
 }
 
 func getCleanedLinks(input string) []string {
@@ -64,7 +68,7 @@ func getLinks(reader io.Reader, base string) []string {
 	parsedLinks, _ := link.Parse(reader)
 
 	for _, link := range parsedLinks {
-		if strings.HasPrefix(link.Href, "/") {
+		if strings.HasPrefix(link.Href, "/") && len(link.Href)>1 {
 			newlink := base + link.Href
 			URLs = append(URLs, newlink)
 		} else {
@@ -115,7 +119,9 @@ func bfs(urlStr string, maxDepth int) []string {
 			} else {
 				seen[currURL] = struct{}{}
 				for _, link := range getCleanedLinks(currURL) {
-					nq[link] = struct{}{}
+					if _, ok := seen[link]; !ok {
+						nq[link] = struct{}{}
+					}
 				}
 			}
 		}
@@ -128,5 +134,35 @@ func bfs(urlStr string, maxDepth int) []string {
 
 	return ret
 
+}
+
+const xmlns = "http://www.sitemaps.org/schemas/sitemap/0.9"
+
+type loc struct {
+	Value string `xml:"loc"`
+}
+
+type OutputURLs struct {
+	Urls []loc `xml:"url"`
+	Xmlns string `xml:"xmlns,attr"`
+}
+
+func generateXML(urls []string) {
+	outputurls := OutputURLs{
+		Xmlns: xmlns,
+	}
+	for _, url := range urls {
+		// val := &URLstruct{Value: url}
+		outputurls.Urls = append(outputurls.Urls, loc{Value: url,})
+	}
+
+	output, err := xml.MarshalIndent(outputurls, "", "\t\t")
+	if err != nil {
+		fmt.Println("Error marshalling to XML:", err)
+	}
+	err = ioutil.WriteFile("results.xml", []byte(xml.Header + string(output)), 0644)
+	if err != nil {
+		fmt.Println("Error writing XML to file:", err)
+	}
 }
 
